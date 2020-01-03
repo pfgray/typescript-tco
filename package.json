@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "cli-highlight": "^2.1.4",
+    "fp-ts": "^2.3.1",
+    "ts-adt": "^1.0.1",
+    "typescript": "^3.7.4"
+  }
+}
