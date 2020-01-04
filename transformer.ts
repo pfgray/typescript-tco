@@ -14,29 +14,18 @@ export const transformer: (<T extends ts.Node>(program: ts.Program) => ts.Transf
   const visit: ts.Visitor = node => {
     if(ts.isFunctionDeclaration(node) && node.name && node.body && node.name.text === 'tailFac_') {
       return convert(node, node.parameters.map(a => a), node.body, context)
-      // console.log('checking function:', node.name.text)
-
-      // console.log('found params:', node.parameters.map(dereferenceParam).join('|'))
-      // console.log('statements:')
-      // node.body.statements.forEach(s => {
-      //   console.log('*********')
-      //   if(ts.isReturnStatement(s)) {
-      //     //console.log('ret:', s.getFullText())
-      //   }
-      
-      // })
-      // console.log('*********')
-      
-    } else {
-      //console.log('not a function declaration!') //, node.getText())
     }
-    
     return ts.visitEachChild(node, child => visit(child), context);
   }
   return n => ts.visitNode(n, visit);
 }
 
-function convert(func: ts.FunctionDeclaration, parameters: ts.ParameterDeclaration[], block: ts.Block, context: ts.TransformationContext): ts.Node {
+function convert(
+  func: ts.FunctionDeclaration,
+  parameters: ts.ParameterDeclaration[],
+  body: ts.Block,
+  context: ts.TransformationContext
+): ts.Node {
   const paramIdentifiers = pipe(
     parameters,
     A.chain(dereferenceParam)
@@ -62,7 +51,7 @@ function convert(func: ts.FunctionDeclaration, parameters: ts.ParameterDeclarati
       return ts.visitEachChild(node, child => replaceIdentifiers(child), context)
     }
   }
-  const newBlock = ts.visitEachChild(block, child => replaceIdentifiers(child), context)
+  const newBody = ts.visitEachChild(body, child => replaceIdentifiers(child), context)
 
   const replaceRecursion: (node: ts.Node) => ts.VisitResult<ts.Node> = node => {
     if(ts.isReturnStatement(node) && node.expression) {
@@ -71,21 +60,25 @@ function convert(func: ts.FunctionDeclaration, parameters: ts.ParameterDeclarati
         if(ts.isIdentifier(ce.expression) && func.name && ce.expression.text === func.name.text) {
           const tempArgs = ce.arguments.map((_, i) => ts.createUniqueName(paramIdentifiers[i].text))
           // for each argument, make a statement which is a reassignment
-          // todo: I think we need temp variables??
-          const updates = ce.arguments.map((arg, i) => {
-            return ts.createStatement(ts.createAssignment(tempArgs[i], arg))
+          const tempArgInitializations = ce.arguments.map((arg, i) => {
+            return ts.createVariableDeclaration(tempArgs[i], undefined, arg)
           });
+
+          const tempArgVariables = ts.createVariableStatement(
+            undefined,
+            ts.createVariableDeclarationList(tempArgInitializations, ts.NodeFlags.Let)
+          );
+
           const commits = tempArgs.map((tempArg, i) => {
             return ts.createStatement(ts.createAssignment(newParamIdentifiers[i][1], tempArg))
           })
-          // const assignments = ce.arguments.map
-          return ts.createBlock([...updates, ...commits]);
+          return ts.createBlock([tempArgVariables, ...commits]);
         }
       }
     }
     return ts.visitEachChild(node, child => replaceRecursion(child), context);
   }
-  const newerBlock = ts.visitEachChild(newBlock, child => replaceRecursion(child), context)
+  const newerBody = ts.visitEachChild(newBody, child => replaceRecursion(child), context)
   
   return ts.updateFunctionDeclaration(
     func,
@@ -101,7 +94,7 @@ function convert(func: ts.FunctionDeclaration, parameters: ts.ParameterDeclarati
         undefined,
         ts.createVariableDeclarationList(initializations, ts.NodeFlags.Let)
       ),
-      ts.createDo(newerBlock, ts.createLiteral(true)),
+      ts.createDo(newerBody, ts.createLiteral(true)),
     ], true)
   )
 }
@@ -113,17 +106,3 @@ function dereferenceParam(p: ts.ParameterDeclaration): ts.Identifier[] {
     throw new Error("why are you doing fancy parameter stuff")
   }
 }
-
-// export const fromJSON = <T extends object>(json: any) => <K extends keyof T>(key: K, initial?: Partial<T>) => {
-//   const value = json[key]
-//   const isExists = value !== null && value !== undefined
-
-//   return isExists ? value : initial ? initial : undefined
-// }
-
-// type Image = {
-//   src: string,
-//   href: string
-// }
-
-// fromJSON<Image>(5)('href')
