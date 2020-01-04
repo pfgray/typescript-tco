@@ -1,5 +1,3 @@
-
-
 // function fac(n: number){
 //   if (n < 2) return 1;
 //   return n * fac(n - 1);
@@ -14,7 +12,6 @@
 //   if(n < 2) return acc;
 //   else return tailFac_(acc * n, n - 1);
 // }
-
 
 // function tailFac2(n: number) {
 //   return tailFac2_(1, n)
@@ -41,4 +38,3 @@
 // console.log('tailFac:  ', fac(10))
 // console.log('tailFac2: ', tailFac(10))
 // console.log('tailFac3: ', tailFac2(10))
-

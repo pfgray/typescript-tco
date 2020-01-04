@@ -10,5 +10,6 @@
     "forceConsistentCasingInFileNames": true,
     "lib": ["es6", "dom"],
     "sourceMap": true
-  }
+  },
+  "include": ["./index.ts"]
 }
