@@ -2,6 +2,8 @@ import * as ts from 'typescript';
 
 import { highlight } from 'cli-highlight'
 import { transformer } from './transformer'
+import * as path from 'path';
+import * as fs from 'fs';
 
 const program = ts.createProgram(['./index.ts'], {});
 const source = program.getSourceFile('./index.ts');
@@ -18,18 +20,13 @@ if(source) {
     })
   );
   console.log('/** Into: **/');
+  const transformed = ts.createPrinter().printFile(result.transformed[0])
   console.log(
-    highlight(ts.createPrinter().printFile(result.transformed[0]), {
+    highlight(transformed, {
       language: 'typescript'
     })
   )
   console.log('/****/');
+  fs.writeFile(path.join('dist', 'index.ts'), transformed, () => {});
 
 }
-
-// Couldn't derive instance for type: User,
-// No Type<Date> found for path:
-// User
-//  └─image
-//    └─src
-
